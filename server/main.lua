@@ -184,7 +184,8 @@ ESX.RegisterServerCallback('esx_society:getEmployees', function(source, cb, soci
 						label       = Jobs[results[i].job].label,
 						grade       = results[i].job_grade,
 						grade_name  = Jobs[results[i].job].grades[tostring(results[i].job_grade)].name,
-						grade_label = Jobs[results[i].job].grades[tostring(results[i].job_grade)].label
+						grade_label = Jobs[results[i].job].grades[tostring(results[i].job_grade)].label,
+						grade_label_fa = Jobs[results[i].job].grades[tostring(results[i].job_grade)].label_fa
 					}
 				})
 			end

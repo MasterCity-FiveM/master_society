@@ -170,12 +170,18 @@ end)
 ESX.RegisterServerCallback('esx_society:getEmployees', function(source, cb, society)
 	if Config.EnableESXIdentity then
 
-		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_grade FROM users WHERE job = @job ORDER BY job_grade DESC', {
+		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_grade, job_sub FROM users WHERE job = @job ORDER BY job_grade DESC', {
 			['@job'] = society
 		}, function (results)
 			local employees = {}
-
+			
 			for i=1, #results, 1 do
+			
+				local subjob = ''
+				if result[i].job_sub ~= nil then
+					subjob = tostring(result[i].job_sub):upper()
+				end
+				
 				table.insert(employees, {
 					name       = results[i].firstname .. ' ' .. results[i].lastname,
 					identifier = results[i].identifier,
@@ -185,7 +191,8 @@ ESX.RegisterServerCallback('esx_society:getEmployees', function(source, cb, soci
 						grade       = results[i].job_grade,
 						grade_name  = Jobs[results[i].job].grades[tostring(results[i].job_grade)].name,
 						grade_label = Jobs[results[i].job].grades[tostring(results[i].job_grade)].label,
-						grade_label_fa = Jobs[results[i].job].grades[tostring(results[i].job_grade)].label_fa
+						grade_label_fa = Jobs[results[i].job].grades[tostring(results[i].job_grade)].label_fa,
+						job_sub = subjob
 					}
 				})
 			end
@@ -193,21 +200,30 @@ ESX.RegisterServerCallback('esx_society:getEmployees', function(source, cb, soci
 			cb(employees)
 		end)
 	else
-		MySQL.Async.fetchAll('SELECT identifier, job, job_grade FROM users WHERE job = @job ORDER BY job_grade DESC', {
+		MySQL.Async.fetchAll('SELECT identifier, job, job_grade, job_sub FROM users WHERE job = @job ORDER BY job_grade DESC', {
 			['@job'] = society
 		}, function (result)
 			local employees = {}
+			
 
 			for i=1, #result, 1 do
+			
+				local subjob = ''
+				if result[i].job_sub ~= nil then
+					subjob = tostring(result[i].job_sub):upper()
+				end
+				
 				table.insert(employees, {
 					name       = GetPlayerName(source),
 					identifier = result[i].identifier,
 					job = {
-						name        = result[i].job,
-						label       = Jobs[result[i].job].label,
-						grade       = result[i].job_grade,
-						grade_name  = Jobs[result[i].job].grades[tostring(result[i].job_grade)].name,
-						grade_label = Jobs[result[i].job].grades[tostring(result[i].job_grade)].label
+						name        	= result[i].job,
+						label       	= Jobs[result[i].job].label,
+						grade       	= result[i].job_grade,
+						grade_name  	= Jobs[result[i].job].grades[tostring(result[i].job_grade)].name,
+						grade_label 	= Jobs[result[i].job].grades[tostring(result[i].job_grade)].label,
+						grade_label_fa  = Jobs[result[i].job].grades[tostring(result[i].job_grade)].label_fa,
+						job_sub = subjob
 					}
 				})
 			end

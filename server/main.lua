@@ -61,6 +61,7 @@ end)
 
 RegisterServerEvent('esx_society:withdrawMoney')
 AddEventHandler('esx_society:withdrawMoney', function(societyName, amount)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:withdrawMoney', {societyName = societyName, amount = amount})
 	local xPlayer = ESX.GetPlayerFromId(source)
 	local society = GetSociety(societyName)
 	amount = ESX.Math.Round(tonumber(amount))
@@ -82,6 +83,7 @@ end)
 
 RegisterServerEvent('esx_society:depositMoney')
 AddEventHandler('esx_society:depositMoney', function(societyName, amount)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:depositMoney', {societyName = societyName, amount = amount})
 	local xPlayer = ESX.GetPlayerFromId(source)
 	local society = GetSociety(societyName)
 	amount = ESX.Math.Round(tonumber(amount))
@@ -103,6 +105,7 @@ end)
 
 RegisterServerEvent('esx_society:washMoney')
 AddEventHandler('esx_society:washMoney', function(society, amount)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:washMoney', {society = society, amount = amount})
 	local xPlayer = ESX.GetPlayerFromId(source)
 	local account = xPlayer.getAccount('black_money')
 	amount = ESX.Math.Round(tonumber(amount))
@@ -128,6 +131,7 @@ end)
 
 RegisterServerEvent('esx_society:putVehicleInGarage')
 AddEventHandler('esx_society:putVehicleInGarage', function(societyName, vehicle)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:putVehicleInGarage', {societyName = societyName, vehicle = vehicle})
 	local society = GetSociety(societyName)
 
 	TriggerEvent('esx_datastore:getSharedDataStore', society.datastore, function(store)
@@ -139,6 +143,7 @@ end)
 
 RegisterServerEvent('esx_society:removeVehicleFromGarage')
 AddEventHandler('esx_society:removeVehicleFromGarage', function(societyName, vehicle)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:removeVehicleFromGarage', {societyName = societyName, vehicle = vehicle})
 	local society = GetSociety(societyName)
 
 	TriggerEvent('esx_datastore:getSharedDataStore', society.datastore, function(store)
@@ -156,6 +161,7 @@ AddEventHandler('esx_society:removeVehicleFromGarage', function(societyName, veh
 end)
 
 ESX.RegisterServerCallback('esx_society:getSocietyMoney', function(source, cb, societyName)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getSocietyMoney', {societyName = societyName})
 	local society = GetSociety(societyName)
 
 	if society then
@@ -168,6 +174,7 @@ ESX.RegisterServerCallback('esx_society:getSocietyMoney', function(source, cb, s
 end)
 
 ESX.RegisterServerCallback('esx_society:getEmployees', function(source, cb, society)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getEmployees', {society = society})
 	if Config.EnableESXIdentity then
 
 		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_grade, job_sub FROM users WHERE job = @job ORDER BY job_grade DESC', {
@@ -234,6 +241,7 @@ ESX.RegisterServerCallback('esx_society:getEmployees', function(source, cb, soci
 end)
 
 ESX.RegisterServerCallback('esx_society:getJob', function(source, cb, society)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getJob', {society = society})
 	local job = json.decode(json.encode(Jobs[society]))
 	local grades = {}
 
@@ -251,6 +259,7 @@ ESX.RegisterServerCallback('esx_society:getJob', function(source, cb, society)
 end)
 
 ESX.RegisterServerCallback('esx_society:setJob', function(source, cb, identifier, job, grade, type)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:setJob', {identifier = identifier, grade = grade, type = type})
 	local xPlayer = ESX.GetPlayerFromId(source)
 	local isBoss = xPlayer.job.grade_name == 'boss'
 
@@ -285,6 +294,7 @@ ESX.RegisterServerCallback('esx_society:setJob', function(source, cb, identifier
 end)
 
 ESX.RegisterServerCallback('esx_society:setJobSalary', function(source, cb, job, grade, salary)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:setJobSalary', {job = job, grade = grade, salary = salary})
 	local xPlayer = ESX.GetPlayerFromId(source)
 
 	if xPlayer.job.name == job and xPlayer.job.grade_name == 'boss' then
@@ -318,6 +328,7 @@ ESX.RegisterServerCallback('esx_society:setJobSalary', function(source, cb, job,
 end)
 
 ESX.RegisterServerCallback('esx_society:getOnlinePlayers', function(source, cb)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getOnlinePlayers', {})
 	local xPlayers = ESX.GetPlayers()
 	local players = {}
 
@@ -335,6 +346,7 @@ ESX.RegisterServerCallback('esx_society:getOnlinePlayers', function(source, cb)
 end)
 
 ESX.RegisterServerCallback('esx_society:getVehiclesInGarage', function(source, cb, societyName)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getVehiclesInGarage', {societyName = societyName})
 	local society = GetSociety(societyName)
 
 	TriggerEvent('esx_datastore:getSharedDataStore', society.datastore, function(store)
@@ -344,6 +356,7 @@ ESX.RegisterServerCallback('esx_society:getVehiclesInGarage', function(source, c
 end)
 
 ESX.RegisterServerCallback('esx_society:isBoss', function(source, cb, job)
+	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:isBoss', {job = job})
 	cb(isPlayerBoss(source, job))
 end)
 

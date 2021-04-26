@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MasterkinG32 Job Panel</title>
+    <link href="https://mastercity.ir/files/css/iransanshttps.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="css/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.rtl.min.css">
+	<link rel="stylesheet" type="text/css" href="datatables/datatables.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/ui.css">
+</head>
+
+<body>
+	<div class="ui container">
+		<div class="row mainpage">
+			<div class="col-md-12">
+				<div class="row g-3 align-items-center">
+					<div class="col-4">
+						<label for="userid" class="col-form-label">کد ملی</label>
+					</div>
+					<div class="col-4">
+						<input type="text" class="form-control" id="userid" placeholder="کد ملی">
+					</div>
+					<div class="col-4">
+						<button type="submit" class="btn btn-primary mb-2 invitetoJob">ارسال درخواست استخدام</button>
+					</div>
+				</div>
+				<hr>
+				<table id="table1" class="display">
+					<thead>
+						<tr>
+							<th>نام</th>
+							<th>رتبه</th>
+							<th>عملیات</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		
+		<div class="row playerPage">
+			<div class="col-md-12">
+				<p>
+					نام: <span class="firstname"></span> - 
+					نام خانوادگی: <span class="lastname"></span> - 
+					موقعیت: <span class="job_grade"></span>
+					<span class="ShowSubJob"> - زیرمجموعه: <span class="job_sub"></span><span>
+				</p>
+				<hr>
+				<p class="ManageJob">
+					
+				</p>
+				<hr>
+				<button class='btn btn-sm btn-danger backtomain'>بازگشت به منوی قبلی</button>
+			</div>
+		</div>
+	</div>
+	<script src="js/config.js"></script>
+    <script src="js/jquery-3.3.1.min.js"></script>
+    <script src="js/popper.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/jdate.min.js"></script>
+	<script type="text/javascript" src="datatables/datatables.min.js"></script>
+    <script src="js/masterking32.js"></script>
+</body>
+</html>

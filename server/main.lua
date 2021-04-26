@@ -1,16 +1,8 @@
 ESX = nil
 local Jobs = {}
 local RegisteredSocieties = {}
-
+local jobInvites = {}
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-
-function GetSociety(name)
-	for i=1, #RegisteredSocieties, 1 do
-		if RegisteredSocieties[i].name == name then
-			return RegisteredSocieties[i]
-		end
-	end
-end
 
 MySQL.ready(function()
 	local result = MySQL.Sync.fetchAll('SELECT * FROM jobs', {})
@@ -18,12 +10,299 @@ MySQL.ready(function()
 	for i=1, #result, 1 do
 		Jobs[result[i].name] = result[i]
 		Jobs[result[i].name].grades = {}
+		Jobs[result[i].name].subs = {}
 	end
 
 	local result2 = MySQL.Sync.fetchAll('SELECT * FROM job_grades', {})
 
 	for i=1, #result2, 1 do
 		Jobs[result2[i].job_name].grades[tostring(result2[i].grade)] = result2[i]
+	end
+	
+	local result3 = MySQL.Sync.fetchAll('SELECT * FROM job_subs', {})
+
+	for i=1, #result3, 1 do
+		Jobs[result3[i].job].subs[tostring(result3[i].job_sub)] = result3[i]
+	end
+end)
+
+RegisterNetEvent('master_society:RequestOpenBossMenu')
+AddEventHandler('master_society:RequestOpenBossMenu', function(isGang)
+	ESX.RunCustomFunction("anti_ddos", source, 'master_society:RequestOpenBossMenu', {})
+	_source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if xPlayer and not isGang and xPlayer.job and xPlayer.job.name and xPlayer.job.grade_name == 'boss' then
+		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job_grade FROM users WHERE job = @job ORDER BY job_grade DESC', {
+			['@job'] = xPlayer.job.name
+		}, function (results)
+			local employees = {}
+			
+			for i=1, #results, 1 do
+				table.insert(employees, {
+					name       = results[i].firstname .. ' ' .. results[i].lastname,
+					identifier = results[i].identifier,
+					grade_label = results[i].job_grade .. ' - ' .. Jobs[xPlayer.job.name].grades[tostring(results[i].job_grade)].label_fa
+				})
+			end
+			
+			TriggerClientEvent('master_society:OpenBossMenu', xPlayer.source, employees, isGang)
+		end)
+	elseif xPlayer and isGang then
+		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
+			if data ~= false and data.gang ~= nil and data.grade == 6 then
+				MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, gang_grade FROM users WHERE gang = @gang ORDER BY gang_grade DESC', {
+					['@gang'] = data.gang
+				}, function (results)
+					local employees = {}
+					
+					for i=1, #results, 1 do
+						table.insert(employees, {
+							name       = results[i].firstname .. ' ' .. results[i].lastname,
+							identifier = results[i].identifier,
+							grade_label = results[i].gang_grade .. ' - ' .. Config.gang_grades[results[i].gang_grade].label_fa
+						})
+					end
+					
+					TriggerClientEvent('master_society:OpenBossMenu', xPlayer.source, employees, isGang)
+				end)
+			end
+		end, xPlayer.source)
+	end
+end)
+
+RegisterNetEvent('master_society:RequestOpenUIPlayer')
+AddEventHandler('master_society:RequestOpenUIPlayer', function(TargetIdentifier, isGang)
+	ESX.RunCustomFunction("anti_ddos", source, 'master_society:RequestOpenUIPlayer', {})
+	if TargetIdentifier == nil then
+		return
+	end
+	
+	_source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'  then
+		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_sub, job_grade FROM users WHERE identifier = @identifier AND job = @job', {
+            ['@identifier'] = TargetIdentifier,
+            ['@job'] = xPlayer.job.name,
+        }, function(results)
+            if #results ~= 0 and xPlayer.job.name == results[1].job then
+				PlayerData = results[1]
+				PlayerData.JobGrades = {}
+				PlayerData.JobSubs = {}
+				PlayerData.JobGrades = Jobs[xPlayer.job.name].grades
+				PlayerData.JobSubs = Jobs[xPlayer.job.name].subs
+				TriggerClientEvent("master_society:ShowUIPlayer", xPlayer.source, PlayerData)
+			else
+				TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'بازیکن مورد نظر یافت نشد.', type = "error", timeout = 5000, layout = "bottom"})
+            end
+        end)
+	elseif xPlayer and isGang then
+		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
+			if data ~= false and data.gang ~= nil and data.grade == 6 then
+				MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, gang, gang_grade FROM users WHERE identifier = @identifier AND gang = @gang', {
+					['@identifier'] = TargetIdentifier,
+					['@gang'] = data.gang,
+				}, function(results)
+					if #results ~= 0 and data.gang == results[1].gang then
+						PlayerData = results[1]
+						PlayerData.job = PlayerData.gang
+						PlayerData.job_grade = PlayerData.gang_grade
+						PlayerData.JobGrades = {}
+						PlayerData.JobSubs = {}
+						PlayerData.JobGrades = Config.gang_grades
+						TriggerClientEvent("master_society:ShowUIPlayer", xPlayer.source, PlayerData)
+					else
+						TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'بازیکن مورد نظر یافت نشد.', type = "error", timeout = 5000, layout = "bottom"})
+					end
+				end)
+			end
+		end, xPlayer.source)
+	end
+end)
+
+RegisterNetEvent('master_society:RequestSaveChanges')
+AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, Grade, Sub, isGang)
+	ESX.RunCustomFunction("anti_ddos", source, 'master_society:RequestSaveChanges', {})
+	if TargetIdentifier == nil then
+		return
+	end
+	
+	_source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if xPlayer and xPlayer.identifier == TargetIdentifier then
+		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'حالت خوبه؟ خوبی خوشی؟', type = "error", timeout = 5000, layout = "bottom"})
+	elseif xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'  then
+		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_sub, job_grade FROM users WHERE identifier = @identifier', {
+            ['@identifier'] = TargetIdentifier,
+        }, function(results)
+            if #results ~= 0 and xPlayer.job.name == results[1].job then
+				local xTarget = ESX.GetPlayerFromIdentifier(TargetIdentifier)
+				
+				job = xPlayer.job.name
+				
+				if Sub == '-' then
+					Sub = ''
+				end
+				
+				if Grade == '-' then
+					Grade = 0
+					job = 'unemployed'
+					Sub = ''
+				end				
+				
+				if xTarget then
+					if xTarget.source ~= xPlayer.source then
+						xTarget.setJob(job, Grade)
+						xTarget.setJobSub(Sub)
+					end
+					--ESX.SavePlayer(xTarget, function(rowsChanged) end)
+				else
+					MySQL.Async.execute('UPDATE users SET job = @job, job_grade = @job_grade, job_sub = @job_sub WHERE identifier = @identifier', {
+						['@identifier'] = TargetIdentifier,
+						['@job'] = job,
+						['@job_grade'] = Grade,
+						['@job_sub'] = Sub,
+					})
+				end
+				
+				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
+			else
+				TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'بازیکن مورد نظر یافت نشد.', type = "error", timeout = 5000, layout = "bottom"})
+            end
+        end)
+	elseif xPlayer and isGang then
+		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
+			if data ~= false and data.gang ~= nil and data.grade == 6 then
+				local xTarget = ESX.GetPlayerFromIdentifier(TargetIdentifier)
+				
+				job = data.gang
+				if Grade == '-' then
+					Grade = 0
+					job = ''
+				end	
+				
+				if xTarget then
+					ESX.TriggerServerCallback("master_gang:GetGang", xTarget.source, function(data2)
+						if data2 ~= false and data2.gang == data.gang then
+							
+							TriggerEvent("master_gang:set_gang", xTarget.source, job, Grade)
+						end
+					end, xTarget.source)
+				else
+					MySQL.Async.execute('UPDATE users SET gang = @gang, gang_grade = @gang_grade WHERE identifier = @identifier AND gang = @gang2', {
+						['@identifier'] = TargetIdentifier,
+						['@gang'] = job,
+						['@gang2'] = data.gang,
+						['@gang_grade'] = Grade,
+					})
+				end
+				
+				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
+			end
+		end, xPlayer.source)
+	end
+end)
+
+RegisterNetEvent('master_society:InviteToJob')
+AddEventHandler('master_society:InviteToJob', function(xTarget, isGang)
+	ESX.RunCustomFunction("anti_ddos", source, 'master_society:InviteToJob', {})
+	if xTarget == nil then
+		return
+	end
+	
+	_source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	local xTarget = ESX.GetPlayerFromId(xTarget)
+	if xTarget == _source then
+		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'خودتو میخوای دعوت کنی؟ گرفتی مارو؟', type = "error", timeout = 5000, layout = "bottom"})
+	elseif xPlayer and xTarget and not isGang and xPlayer.job.name ~= xTarget.job.name and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss' then
+		jobInvites[xTarget.source] = {}
+		jobInvites[xTarget.source].Boss = xPlayer.source
+		jobInvites[xTarget.source].job = xPlayer.job.name
+		jobInvites[xTarget.source].isGang = false
+		
+		TriggerClientEvent("master_society:getInvite", xTarget.source, xPlayer.job.label_fa)
+		TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
+		
+		Citizen.CreateThread(function()
+			Citizen.Wait(200)
+			TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'درخواست شما به ' .. xTarget.firstname .. ' ' .. xTarget.lastname .. ' ارسال شد.', type = "success", timeout = 5000, layout = "bottom"})
+			Citizen.Wait(15000)
+			if jobInvites[xTarget.source] ~= nil then
+				jobInvites[xTarget.source] = nil
+			end
+		end)
+	elseif xPlayer and isGang and xTarget then
+		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
+			if data ~= false and data.gang ~= nil and data.grade == 6 then
+				jobInvites[xTarget.source] = {}
+				jobInvites[xTarget.source].Boss = xPlayer.source
+				jobInvites[xTarget.source].job = data.gang
+				jobInvites[xTarget.source].isGang = true
+				
+				TriggerClientEvent("master_society:getInvite", xTarget.source, data.gang)
+				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
+				
+				Citizen.CreateThread(function()
+					Citizen.Wait(200)
+					TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'درخواست شما به ' .. xTarget.firstname .. ' ' .. xTarget.lastname .. ' ارسال شد.', type = "success", timeout = 5000, layout = "bottom"})
+					Citizen.Wait(15000)
+					if jobInvites[xTarget.source] ~= nil then
+						jobInvites[xTarget.source] = nil
+					end
+				end)
+			end
+		end, xPlayer.source)
+	else
+		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'بازیکن مورد نظر یافت نشد.', type = "error", timeout = 5000, layout = "bottom"})
+	end
+end)
+
+RegisterNetEvent('master_society:acceptRequest')
+AddEventHandler('master_society:acceptRequest', function()
+	ESX.RunCustomFunction("anti_ddos", source, 'master_society:acceptRequest', {})
+	_source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if xPlayer and jobInvites[xPlayer.source] ~= nil and not jobInvites[xPlayer.source].isGang then
+		xPlayer.setJob(jobInvites[xPlayer.source].job, 0)
+		xPlayer.setJobSub('')
+		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'شما درخواست را قبول کردید.', type = "success", timeout = 5000, layout = "bottom"})
+		TriggerClientEvent("pNotify:SendNotification", jobInvites[xPlayer.source].Boss, { text = xPlayer.firstname .. ' ' .. xPlayer.lastname .. '، درخواست شما را قبول کرد.', type = "success", timeout = 5000, layout = "bottom"})
+		
+		jobInvites[xPlayer.source] = nil
+		--ESX.SavePlayer(xPlayer, function(rowsChanged) end)
+	elseif xPlayer and jobInvites[xPlayer.source] ~= nil and jobInvites[xPlayer.source].isGang then
+		TriggerEvent("master_gang:set_gang", xPlayer.source, jobInvites[xPlayer.source].job, 1)
+		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'شما درخواست را قبول کردید.', type = "success", timeout = 5000, layout = "bottom"})
+		TriggerClientEvent("pNotify:SendNotification", jobInvites[xPlayer.source].Boss, { text = xPlayer.firstname .. ' ' .. xPlayer.lastname .. '، درخواست شما را قبول کرد.', type = "success", timeout = 5000, layout = "bottom"})
+		
+		jobInvites[xPlayer.source] = nil
+		--ESX.SavePlayer(xPlayer, function(rowsChanged) end)
+	end
+end)
+
+---------------------------------------------------------------------------
+
+AddEventHandler('master_society:registerSociety', function(name, label, account, datastore, inventory, data)
+	local found = false
+
+	local society = {
+		name = name,
+		label = label,
+		account = account,
+		datastore = datastore,
+		inventory = inventory,
+		data = data
+	}
+
+	for i=1, #RegisteredSocieties, 1 do
+		if RegisteredSocieties[i].name == name then
+			found, RegisteredSocieties[i] = true, society
+			break
+		end
+	end
+
+	if not found then
+		table.insert(RegisteredSocieties, society)
 	end
 end)
 
@@ -50,348 +329,3 @@ AddEventHandler('esx_society:registerSociety', function(name, label, account, da
 		table.insert(RegisteredSocieties, society)
 	end
 end)
-
-AddEventHandler('esx_society:getSocieties', function(cb)
-	cb(RegisteredSocieties)
-end)
-
-AddEventHandler('esx_society:getSociety', function(name, cb)
-	cb(GetSociety(name))
-end)
-
-RegisterServerEvent('esx_society:withdrawMoney')
-AddEventHandler('esx_society:withdrawMoney', function(societyName, amount)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:withdrawMoney', {societyName = societyName, amount = amount})
-	local xPlayer = ESX.GetPlayerFromId(source)
-	local society = GetSociety(societyName)
-	amount = ESX.Math.Round(tonumber(amount))
-
-	if xPlayer.job.name == society.name then
-		TriggerEvent('esx_addonaccount:getSharedAccount', society.account, function(account)
-			if amount > 0 and account.money >= amount then
-				account.removeMoney(amount)
-				xPlayer.addMoney(amount)
-				xPlayer.showNotification(_U('have_withdrawn', ESX.Math.GroupDigits(amount)))
-			else
-				xPlayer.showNotification(_U('invalid_amount'))
-			end
-		end)
-	else
-		print(('esx_society: %s attempted to call withdrawMoney!'):format(xPlayer.identifier))
-	end
-end)
-
-RegisterServerEvent('esx_society:depositMoney')
-AddEventHandler('esx_society:depositMoney', function(societyName, amount)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:depositMoney', {societyName = societyName, amount = amount})
-	local xPlayer = ESX.GetPlayerFromId(source)
-	local society = GetSociety(societyName)
-	amount = ESX.Math.Round(tonumber(amount))
-
-	if xPlayer.job.name == society.name then
-		if amount > 0 and xPlayer.getMoney() >= amount then
-			TriggerEvent('esx_addonaccount:getSharedAccount', society.account, function(account)
-				xPlayer.removeMoney(amount)
-				xPlayer.showNotification(_U('have_deposited', ESX.Math.GroupDigits(amount)))
-				account.addMoney(amount)
-			end)
-		else
-			xPlayer.showNotification(_U('invalid_amount'))
-		end
-	else
-		print(('esx_society: %s attempted to call depositMoney!'):format(xPlayer.identifier))
-	end
-end)
-
-RegisterServerEvent('esx_society:washMoney')
-AddEventHandler('esx_society:washMoney', function(society, amount)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:washMoney', {society = society, amount = amount})
-	local xPlayer = ESX.GetPlayerFromId(source)
-	local account = xPlayer.getAccount('black_money')
-	amount = ESX.Math.Round(tonumber(amount))
-
-	if xPlayer.job.name == society then
-		if amount and amount > 0 and account.money >= amount then
-			xPlayer.removeAccountMoney('black_money', amount)
-
-			MySQL.Async.execute('INSERT INTO society_moneywash (identifier, society, amount) VALUES (@identifier, @society, @amount)', {
-				['@identifier'] = xPlayer.identifier,
-				['@society'] = society,
-				['@amount'] = amount
-			}, function(rowsChanged)
-				xPlayer.showNotification(_U('you_have', ESX.Math.GroupDigits(amount)))
-			end)
-		else
-			xPlayer.showNotification(_U('invalid_amount'))
-		end
-	else
-		print(('esx_society: %s attempted to call washMoney!'):format(xPlayer.identifier))
-	end
-end)
-
-RegisterServerEvent('esx_society:putVehicleInGarage')
-AddEventHandler('esx_society:putVehicleInGarage', function(societyName, vehicle)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:putVehicleInGarage', {societyName = societyName, vehicle = vehicle})
-	local society = GetSociety(societyName)
-
-	TriggerEvent('esx_datastore:getSharedDataStore', society.datastore, function(store)
-		local garage = store.get('garage') or {}
-		table.insert(garage, vehicle)
-		store.set('garage', garage)
-	end)
-end)
-
-RegisterServerEvent('esx_society:removeVehicleFromGarage')
-AddEventHandler('esx_society:removeVehicleFromGarage', function(societyName, vehicle)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:removeVehicleFromGarage', {societyName = societyName, vehicle = vehicle})
-	local society = GetSociety(societyName)
-
-	TriggerEvent('esx_datastore:getSharedDataStore', society.datastore, function(store)
-		local garage = store.get('garage') or {}
-
-		for i=1, #garage, 1 do
-			if garage[i].plate == vehicle.plate then
-				table.remove(garage, i)
-				break
-			end
-		end
-
-		store.set('garage', garage)
-	end)
-end)
-
-ESX.RegisterServerCallback('esx_society:getSocietyMoney', function(source, cb, societyName)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getSocietyMoney', {societyName = societyName})
-	local society = GetSociety(societyName)
-
-	if society then
-		TriggerEvent('esx_addonaccount:getSharedAccount', society.account, function(account)
-			cb(account.money)
-		end)
-	else
-		cb(0)
-	end
-end)
-
-ESX.RegisterServerCallback('esx_society:getEmployees', function(source, cb, society)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getEmployees', {society = society})
-	if Config.EnableESXIdentity then
-
-		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_grade, job_sub FROM users WHERE job = @job ORDER BY job_grade DESC', {
-			['@job'] = society
-		}, function (results)
-			local employees = {}
-			
-			for i=1, #results, 1 do
-			
-				local subjob = ''
-				if result[i].job_sub ~= nil then
-					subjob = tostring(result[i].job_sub):upper()
-				end
-				
-				table.insert(employees, {
-					name       = results[i].firstname .. ' ' .. results[i].lastname,
-					identifier = results[i].identifier,
-					job = {
-						name        = results[i].job,
-						label       = Jobs[results[i].job].label,
-						grade       = results[i].job_grade,
-						grade_name  = Jobs[results[i].job].grades[tostring(results[i].job_grade)].name,
-						grade_label = Jobs[results[i].job].grades[tostring(results[i].job_grade)].label,
-						grade_label_fa = Jobs[results[i].job].grades[tostring(results[i].job_grade)].label_fa,
-						job_sub = subjob
-					}
-				})
-			end
-
-			cb(employees)
-		end)
-	else
-		MySQL.Async.fetchAll('SELECT identifier, job, job_grade, job_sub FROM users WHERE job = @job ORDER BY job_grade DESC', {
-			['@job'] = society
-		}, function (result)
-			local employees = {}
-			
-
-			for i=1, #result, 1 do
-			
-				local subjob = ''
-				if result[i].job_sub ~= nil then
-					subjob = tostring(result[i].job_sub):upper()
-				end
-				
-				table.insert(employees, {
-					name       = GetPlayerName(source),
-					identifier = result[i].identifier,
-					job = {
-						name        	= result[i].job,
-						label       	= Jobs[result[i].job].label,
-						grade       	= result[i].job_grade,
-						grade_name  	= Jobs[result[i].job].grades[tostring(result[i].job_grade)].name,
-						grade_label 	= Jobs[result[i].job].grades[tostring(result[i].job_grade)].label,
-						grade_label_fa  = Jobs[result[i].job].grades[tostring(result[i].job_grade)].label_fa,
-						job_sub = subjob
-					}
-				})
-			end
-
-			cb(employees)
-		end)
-	end
-end)
-
-ESX.RegisterServerCallback('esx_society:getJob', function(source, cb, society)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getJob', {society = society})
-	local job = json.decode(json.encode(Jobs[society]))
-	local grades = {}
-
-	for k,v in pairs(job.grades) do
-		table.insert(grades, v)
-	end
-
-	table.sort(grades, function(a, b)
-		return a.grade < b.grade
-	end)
-
-	job.grades = grades
-
-	cb(job)
-end)
-
-ESX.RegisterServerCallback('esx_society:setJob', function(source, cb, identifier, job, grade, type)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:setJob', {identifier = identifier, grade = grade, type = type})
-	local xPlayer = ESX.GetPlayerFromId(source)
-	local isBoss = xPlayer.job.grade_name == 'boss'
-
-	if isBoss then
-		local xTarget = ESX.GetPlayerFromIdentifier(identifier)
-
-		if xTarget then
-			xTarget.setJob(job, grade)
-
-			if type == 'hire' then
-				xTarget.showNotification(_U('you_have_been_hired', job))
-			elseif type == 'promote' then
-				xTarget.showNotification(_U('you_have_been_promoted'))
-			elseif type == 'fire' then
-				xTarget.showNotification(_U('you_have_been_fired', xTarget.getJob().label))
-			end
-
-			cb()
-		else
-			MySQL.Async.execute('UPDATE users SET job = @job, job_grade = @job_grade WHERE identifier = @identifier', {
-				['@job']        = job,
-				['@job_grade']  = grade,
-				['@identifier'] = identifier
-			}, function(rowsChanged)
-				cb()
-			end)
-		end
-	else
-		print(('esx_society: %s attempted to setJob'):format(xPlayer.identifier))
-		cb()
-	end
-end)
-
-ESX.RegisterServerCallback('esx_society:setJobSalary', function(source, cb, job, grade, salary)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:setJobSalary', {job = job, grade = grade, salary = salary})
-	local xPlayer = ESX.GetPlayerFromId(source)
-
-	if xPlayer.job.name == job and xPlayer.job.grade_name == 'boss' then
-		if salary <= Config.MaxSalary then
-			MySQL.Async.execute('UPDATE job_grades SET salary = @salary WHERE job_name = @job_name AND grade = @grade', {
-				['@salary']   = salary,
-				['@job_name'] = job,
-				['@grade']    = grade
-			}, function(rowsChanged)
-				Jobs[job].grades[tostring(grade)].salary = salary
-				local xPlayers = ESX.GetPlayers()
-
-				for i=1, #xPlayers, 1 do
-					local xTarget = ESX.GetPlayerFromId(xPlayers[i])
-
-					if xTarget.job.name == job and xTarget.job.grade == grade then
-						xTarget.setJob(job, grade)
-					end
-				end
-
-				cb()
-			end)
-		else
-			print(('esx_society: %s attempted to setJobSalary over config limit!'):format(xPlayer.identifier))
-			cb()
-		end
-	else
-		print(('esx_society: %s attempted to setJobSalary'):format(xPlayer.identifier))
-		cb()
-	end
-end)
-
-ESX.RegisterServerCallback('esx_society:getOnlinePlayers', function(source, cb)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getOnlinePlayers', {})
-	local xPlayers = ESX.GetPlayers()
-	local players = {}
-
-	for i=1, #xPlayers, 1 do
-		local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-		table.insert(players, {
-			source = xPlayer.source,
-			identifier = xPlayer.identifier,
-			name = xPlayer.name,
-			job = xPlayer.job
-		})
-	end
-
-	cb(players)
-end)
-
-ESX.RegisterServerCallback('esx_society:getVehiclesInGarage', function(source, cb, societyName)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:getVehiclesInGarage', {societyName = societyName})
-	local society = GetSociety(societyName)
-
-	TriggerEvent('esx_datastore:getSharedDataStore', society.datastore, function(store)
-		local garage = store.get('garage') or {}
-		cb(garage)
-	end)
-end)
-
-ESX.RegisterServerCallback('esx_society:isBoss', function(source, cb, job)
-	ESX.RunCustomFunction("anti_ddos", source, 'esx_society:isBoss', {job = job})
-	cb(isPlayerBoss(source, job))
-end)
-
-function isPlayerBoss(playerId, job)
-	local xPlayer = ESX.GetPlayerFromId(playerId)
-
-	if xPlayer.job.name == job and xPlayer.job.grade_name == 'boss' then
-		return true
-	else
-		print(('esx_society: %s attempted open a society boss menu!'):format(xPlayer.identifier))
-		return false
-	end
-end
-
-function WashMoneyCRON(d, h, m)
-	MySQL.Async.fetchAll('SELECT * FROM society_moneywash', {}, function(result)
-		for i=1, #result, 1 do
-			local society = GetSociety(result[i].society)
-			local xPlayer = ESX.GetPlayerFromIdentifier(result[i].identifier)
-
-			-- add society money
-			TriggerEvent('esx_addonaccount:getSharedAccount', society.account, function(account)
-				account.addMoney(result[i].amount)
-			end)
-
-			-- send notification if player is online
-			if xPlayer then
-				xPlayer.showNotification(_U('you_have_laundered', ESX.Math.GroupDigits(result[i].amount)))
-			end
-
-			MySQL.Async.execute('DELETE FROM society_moneywash WHERE id = @id', {
-				['@id'] = result[i].id
-			})
-		end
-	end)
-end
-
-TriggerEvent('cron:runAt', 3, 0, WashMoneyCRON)

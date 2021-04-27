@@ -128,9 +128,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 	
 	_source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if xPlayer and xPlayer.identifier == TargetIdentifier then
-		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'حالت خوبه؟ خوبی خوشی؟', type = "error", timeout = 5000, layout = "bottom"})
-	elseif xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'  then
+	if xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'  then
 		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_sub, job_grade FROM users WHERE identifier = @identifier', {
             ['@identifier'] = TargetIdentifier,
         }, function(results)
@@ -138,6 +136,10 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 				local xTarget = ESX.GetPlayerFromIdentifier(TargetIdentifier)
 				
 				job = xPlayer.job.name
+				
+				if xPlayer.identifier == TargetIdentifier then
+					Grade = xPlayer.job.grade
+				end
 				
 				if Sub == '-' then
 					Sub = ''
@@ -152,8 +154,9 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 				if xTarget then
 					if xTarget.source ~= xPlayer.source then
 						xTarget.setJob(job, Grade)
-						xTarget.setJobSub(Sub)
 					end
+					
+					xTarget.setJobSub(Sub)
 					--ESX.SavePlayer(xTarget, function(rowsChanged) end)
 				else
 					MySQL.Async.execute('UPDATE users SET job = @job, job_grade = @job_grade, job_sub = @job_sub WHERE identifier = @identifier', {
@@ -169,6 +172,8 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 				TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'بازیکن مورد نظر یافت نشد.', type = "error", timeout = 5000, layout = "bottom"})
             end
         end)
+	elseif xPlayer and xPlayer.identifier == TargetIdentifier then
+		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'حالت خوبه؟ خوبی خوشی؟', type = "error", timeout = 5000, layout = "bottom"})
 	elseif xPlayer and isGang then
 		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
 			if data ~= false and data.gang ~= nil and data.grade == 6 then

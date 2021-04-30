@@ -154,6 +154,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 				if xTarget then
 					if xTarget.source ~= xPlayer.source then
 						xTarget.setJob(job, Grade)
+						ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Made Changes', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "Job: **" .. job .. "**" .. "Grade: **" .. Grade .. "**" .. "subjob: **" .. Sub .. "**")
 					end
 					
 					xTarget.setJobSub(Sub)
@@ -165,6 +166,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 						['@job_grade'] = Grade,
 						['@job_sub'] = Sub,
 					})
+					ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Made Changes[offline]', "Target: **" .. TargetIdentifier .. "**" .. "Job: **" .. job .. "**" .. "Grade: **" .. Grade .. "**" .. "subjob: **" .. Sub .. "**")
 				end
 				
 				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
@@ -190,6 +192,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 						if data2 ~= false and data2.gang == data.gang then
 							
 							TriggerEvent("master_gang:set_gang", xTarget.source, job, Grade)
+							ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "Gang: **" .. job .. "**" .. "Grade: **" .. Grade .. "**")
 						end
 					end, xTarget.source)
 				else
@@ -199,6 +202,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 						['@gang2'] = data.gang,
 						['@gang_grade'] = Grade,
 					})
+					ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes[Offline]', "Target: **" .. TargetIdentifier .. "**" .. "Gang: **" .. job .. "**" .. "Grade: **" .. Grade .. "**")
 				end
 				
 				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
@@ -227,7 +231,7 @@ AddEventHandler('master_society:InviteToJob', function(xTarget, isGang)
 		
 		TriggerClientEvent("master_society:getInvite", xTarget.source, xPlayer.job.label_fa)
 		TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
-		
+		ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Invited Someone To Job', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "Job: **" .. xPlayer.job.name .. "**")
 		Citizen.CreateThread(function()
 			Citizen.Wait(200)
 			TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'درخواست شما به ' .. xTarget.firstname .. ' ' .. xTarget.lastname .. ' ارسال شد.', type = "success", timeout = 5000, layout = "bottom"})
@@ -246,7 +250,7 @@ AddEventHandler('master_society:InviteToJob', function(xTarget, isGang)
 				
 				TriggerClientEvent("master_society:getInvite", xTarget.source, data.gang)
 				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
-				
+				ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Invited Someone To Gang', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "gang: **" .. data.gang .. "**")
 				Citizen.CreateThread(function()
 					Citizen.Wait(200)
 					TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'درخواست شما به ' .. xTarget.firstname .. ' ' .. xTarget.lastname .. ' ارسال شد.', type = "success", timeout = 5000, layout = "bottom"})
@@ -270,6 +274,7 @@ AddEventHandler('master_society:acceptRequest', function()
 	if xPlayer and jobInvites[xPlayer.source] ~= nil and not jobInvites[xPlayer.source].isGang then
 		xPlayer.setJob(jobInvites[xPlayer.source].job, 0)
 		xPlayer.setJobSub('')
+		ESX.RunCustomFunction("discord", xPlayer.source, 'jobsociety', 'Accepted Invite', "-")
 		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'شما درخواست را قبول کردید.', type = "success", timeout = 5000, layout = "bottom"})
 		TriggerClientEvent("pNotify:SendNotification", jobInvites[xPlayer.source].Boss, { text = xPlayer.firstname .. ' ' .. xPlayer.lastname .. '، درخواست شما را قبول کرد.', type = "success", timeout = 5000, layout = "bottom"})
 		
@@ -277,6 +282,7 @@ AddEventHandler('master_society:acceptRequest', function()
 		--ESX.SavePlayer(xPlayer, function(rowsChanged) end)
 	elseif xPlayer and jobInvites[xPlayer.source] ~= nil and jobInvites[xPlayer.source].isGang then
 		TriggerEvent("master_gang:set_gang", xPlayer.source, jobInvites[xPlayer.source].job, 1)
+		ESX.RunCustomFunction("discord", xPlayer.source, 'gangsociety', 'Accepted Invite', "-")
 		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'شما درخواست را قبول کردید.', type = "success", timeout = 5000, layout = "bottom"})
 		TriggerClientEvent("pNotify:SendNotification", jobInvites[xPlayer.source].Boss, { text = xPlayer.firstname .. ' ' .. xPlayer.lastname .. '، درخواست شما را قبول کرد.', type = "success", timeout = 5000, layout = "bottom"})
 		

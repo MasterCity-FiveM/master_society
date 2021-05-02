@@ -154,7 +154,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 				if xTarget then
 					if xTarget.source ~= xPlayer.source then
 						xTarget.setJob(job, Grade)
-						ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Made Changes', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "Job: **" .. job .. "**" .. "Grade: **" .. Grade .. "**" .. "subjob: **" .. Sub .. "**")
+						ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Made Changes', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "\nJob: **" .. job .. "**" .. "\nGrade: **" .. Grade .. "**" .. "\nsubjob: **" .. Sub .. "**")
 					end
 					
 					xTarget.setJobSub(Sub)
@@ -166,7 +166,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 						['@job_grade'] = Grade,
 						['@job_sub'] = Sub,
 					})
-					ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Made Changes[offline]', "Target: **" .. TargetIdentifier .. "**" .. "Job: **" .. job .. "**" .. "Grade: **" .. Grade .. "**" .. "subjob: **" .. Sub .. "**")
+					ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Made Changes[offline]', "Target: **" .. TargetIdentifier .. "**" .. "\nJob: **" .. job .. "**" .. "\nGrade: **" .. Grade .. "**" .. "\nsubjob: **" .. Sub .. "**")
 				end
 				
 				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
@@ -192,7 +192,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 						if data2 ~= false and data2.gang == data.gang then
 							
 							TriggerEvent("master_gang:set_gang", xTarget.source, job, Grade)
-							ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "Gang: **" .. job .. "**" .. "Grade: **" .. Grade .. "**")
+							ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "\nGang: **" .. job .. "**" .. "\nGrade: **" .. Grade .. "**")
 						end
 					end, xTarget.source)
 				else
@@ -202,7 +202,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 						['@gang2'] = data.gang,
 						['@gang_grade'] = Grade,
 					})
-					ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes[Offline]', "Target: **" .. TargetIdentifier .. "**" .. "Gang: **" .. job .. "**" .. "Grade: **" .. Grade .. "**")
+					ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes[Offline]', "Target: **" .. TargetIdentifier .. "**" .. "\nGang: **" .. job .. "**" .. "\nGrade: **" .. Grade .. "**")
 				end
 				
 				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
@@ -231,7 +231,7 @@ AddEventHandler('master_society:InviteToJob', function(xTarget, isGang)
 		
 		TriggerClientEvent("master_society:getInvite", xTarget.source, xPlayer.job.label_fa)
 		TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
-		ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Invited Someone To Job', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "Job: **" .. xPlayer.job.name .. "**")
+		ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Invited Someone To Job', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "\nJob: **" .. xPlayer.job.name .. "**")
 		Citizen.CreateThread(function()
 			Citizen.Wait(200)
 			TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'درخواست شما به ' .. xTarget.firstname .. ' ' .. xTarget.lastname .. ' ارسال شد.', type = "success", timeout = 5000, layout = "bottom"})
@@ -250,7 +250,7 @@ AddEventHandler('master_society:InviteToJob', function(xTarget, isGang)
 				
 				TriggerClientEvent("master_society:getInvite", xTarget.source, data.gang)
 				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
-				ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Invited Someone To Gang', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "gang: **" .. data.gang .. "**")
+				ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Invited Someone To Gang', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "\nGang: **" .. data.gang .. "**")
 				Citizen.CreateThread(function()
 					Citizen.Wait(200)
 					TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'درخواست شما به ' .. xTarget.firstname .. ' ' .. xTarget.lastname .. ' ارسال شد.', type = "success", timeout = 5000, layout = "bottom"})

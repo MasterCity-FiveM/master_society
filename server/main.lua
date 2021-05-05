@@ -25,6 +25,17 @@ MySQL.ready(function()
 		Jobs[result3[i].job].subs[tostring(result3[i].job_sub)] = result3[i]
 	end
 end)
+AddEventHandler('esx_society:getSociety', function(name, cb)
+	cb(GetSociety(name))
+end)
+
+function GetSociety(name)
+	for i=1, #RegisteredSocieties, 1 do
+		if RegisteredSocieties[i].name == name then
+			return RegisteredSocieties[i]
+		end
+	end
+end
 
 RegisterNetEvent('master_society:RequestOpenBossMenu')
 AddEventHandler('master_society:RequestOpenBossMenu', function(isGang)

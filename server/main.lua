@@ -42,7 +42,7 @@ AddEventHandler('master_society:RequestOpenBossMenu', function(isGang)
 	ESX.RunCustomFunction("anti_ddos", source, 'master_society:RequestOpenBossMenu', {})
 	_source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if xPlayer and not isGang and xPlayer.job and xPlayer.job.name and xPlayer.job.grade_name == 'boss' then
+	if xPlayer and not isGang and xPlayer.job and xPlayer.job.name and (xPlayer.job.grade_name == 'boss' or xPlayer.job.grade_name == 'janeshinf' or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief') then
 		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job_grade FROM users WHERE job = @job ORDER BY job_grade DESC', {
 			['@job'] = xPlayer.job.name
 		}, function (results)
@@ -74,6 +74,7 @@ AddEventHandler('master_society:RequestOpenBossMenu', function(isGang)
 						})
 					end
 					
+					Citizen.Wait(100)
 					TriggerClientEvent('master_society:OpenBossMenu', xPlayer.source, employees, isGang)
 				end)
 			end
@@ -90,7 +91,7 @@ AddEventHandler('master_society:RequestOpenUIPlayer', function(TargetIdentifier,
 	
 	_source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'  then
+	if xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf' then
 		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_sub, job_grade FROM users WHERE identifier = @identifier AND job = @job', {
             ['@identifier'] = TargetIdentifier,
             ['@job'] = xPlayer.job.name,
@@ -139,7 +140,7 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 	
 	_source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'  then
+	if xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf' then
 		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_sub, job_grade FROM users WHERE identifier = @identifier', {
             ['@identifier'] = TargetIdentifier,
         }, function(results)
@@ -234,7 +235,7 @@ AddEventHandler('master_society:InviteToJob', function(xTarget, isGang)
 	local xTarget = ESX.GetPlayerFromId(xTarget)
 	if xTarget == _source then
 		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'خودتو میخوای دعوت کنی؟ گرفتی مارو؟', type = "error", timeout = 5000, layout = "bottom"})
-	elseif xPlayer and xTarget and not isGang and xPlayer.job.name ~= xTarget.job.name and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss' then
+	elseif xPlayer and xTarget and not isGang and xPlayer.job.name ~= xTarget.job.name and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss' or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf' then
 		jobInvites[xTarget.source] = {}
 		jobInvites[xTarget.source].Boss = xPlayer.source
 		jobInvites[xTarget.source].job = xPlayer.job.name

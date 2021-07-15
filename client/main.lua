@@ -19,10 +19,6 @@ AddEventHandler('master_society:RequestOpenBossMenu', function()
 	TriggerServerEvent("master_society:RequestOpenBossMenu", false)
 end)
 
-AddEventHandler('master_society:RequestOpenGangBossMenu', function()
-	TriggerServerEvent("master_society:RequestOpenBossMenu", true)
-end)
-
 RegisterNUICallback("NUIFocusOff", function()
 	closeUI()
 end)

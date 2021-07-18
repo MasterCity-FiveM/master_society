@@ -42,7 +42,29 @@ AddEventHandler('master_society:RequestOpenBossMenu', function(isGang)
 	ESX.RunCustomFunction("anti_ddos", source, 'master_society:RequestOpenBossMenu', {})
 	_source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if xPlayer and not isGang and xPlayer.job and xPlayer.job.name and (xPlayer.job.grade_name == 'boss' or xPlayer.job.grade_name == 'janeshinf' or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief') then
+	
+	if xPlayer and isGang then
+		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
+			if data ~= false and data.gang ~= nil and data.grade == 6 then
+				MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, gang_grade FROM users WHERE gang = @gang ORDER BY gang_grade DESC', {
+					['@gang'] = data.gang
+				}, function (results)
+					local employees = {}
+					
+					for i=1, #results, 1 do
+						table.insert(employees, {
+							name       = results[i].firstname .. ' ' .. results[i].lastname,
+							identifier = results[i].identifier,
+							grade_label = results[i].gang_grade
+						})
+					end
+					
+					Citizen.Wait(100)
+					TriggerClientEvent('master_society:OpenBossMenu', xPlayer.source, employees, true)
+				end)
+			end
+		end, xPlayer.source)
+	elseif xPlayer and not isGang and xPlayer.job and xPlayer.job.name and (xPlayer.job.grade_name == 'boss' or xPlayer.job.grade_name == 'janeshinf' or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief') then
 		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job_grade FROM users WHERE job = @job ORDER BY job_grade DESC', {
 			['@job'] = xPlayer.job.name
 		}, function (results)
@@ -56,29 +78,8 @@ AddEventHandler('master_society:RequestOpenBossMenu', function(isGang)
 				})
 			end
 			
-			TriggerClientEvent('master_society:OpenBossMenu', xPlayer.source, employees, isGang)
+			TriggerClientEvent('master_society:OpenBossMenu', xPlayer.source, employees, false)
 		end)
-	elseif xPlayer and isGang then
-		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
-			if data ~= false and data.gang ~= nil and data.grade == 6 then
-				MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, gang_grade FROM users WHERE gang = @gang ORDER BY gang_grade DESC', {
-					['@gang'] = data.gang
-				}, function (results)
-					local employees = {}
-					
-					for i=1, #results, 1 do
-						table.insert(employees, {
-							name       = results[i].firstname .. ' ' .. results[i].lastname,
-							identifier = results[i].identifier,
-							grade_label = results[i].gang_grade .. ' - ' .. Config.gang_grades[results[i].gang_grade].label_fa
-						})
-					end
-					
-					Citizen.Wait(100)
-					TriggerClientEvent('master_society:OpenBossMenu', xPlayer.source, employees, isGang)
-				end)
-			end
-		end, xPlayer.source)
 	end
 end)
 
@@ -91,23 +92,7 @@ AddEventHandler('master_society:RequestOpenUIPlayer', function(TargetIdentifier,
 	
 	_source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf' then
-		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_sub, job_grade FROM users WHERE identifier = @identifier AND job = @job', {
-            ['@identifier'] = TargetIdentifier,
-            ['@job'] = xPlayer.job.name,
-        }, function(results)
-            if #results ~= 0 and xPlayer.job.name == results[1].job then
-				PlayerData = results[1]
-				PlayerData.JobGrades = {}
-				PlayerData.JobSubs = {}
-				PlayerData.JobGrades = Jobs[xPlayer.job.name].grades
-				PlayerData.JobSubs = Jobs[xPlayer.job.name].subs
-				TriggerClientEvent("master_society:ShowUIPlayer", xPlayer.source, PlayerData)
-			else
-				TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'بازیکن مورد نظر یافت نشد.', type = "error", timeout = 5000, layout = "bottom"})
-            end
-        end)
-	elseif xPlayer and isGang then
+	if xPlayer and isGang then
 		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
 			if data ~= false and data.gang ~= nil and data.grade == 6 then
 				MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, gang, gang_grade FROM users WHERE identifier = @identifier AND gang = @gang', {
@@ -128,6 +113,22 @@ AddEventHandler('master_society:RequestOpenUIPlayer', function(TargetIdentifier,
 				end)
 			end
 		end, xPlayer.source)
+	elseif xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and (xPlayer.job.grade_name == 'boss'or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf') then
+		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_sub, job_grade FROM users WHERE identifier = @identifier AND job = @job', {
+            ['@identifier'] = TargetIdentifier,
+            ['@job'] = xPlayer.job.name,
+        }, function(results)
+            if #results ~= 0 and xPlayer.job.name == results[1].job then
+				PlayerData = results[1]
+				PlayerData.JobGrades = {}
+				PlayerData.JobSubs = {}
+				PlayerData.JobGrades = Jobs[xPlayer.job.name].grades
+				PlayerData.JobSubs = Jobs[xPlayer.job.name].subs
+				TriggerClientEvent("master_society:ShowUIPlayer", xPlayer.source, PlayerData)
+			else
+				TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'بازیکن مورد نظر یافت نشد.', type = "error", timeout = 5000, layout = "bottom"})
+            end
+        end)
 	end
 end)
 
@@ -140,7 +141,39 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
 	
 	_source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss'or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf' then
+	if xPlayer and isGang then
+		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
+			if data ~= false and data.gang ~= nil and data.grade == 6 then
+				local xTarget = ESX.GetPlayerFromIdentifier(TargetIdentifier)
+				
+				job = data.gang
+				if Grade == '-' then
+					Grade = 0
+					job = ''
+				end	
+				
+				if xTarget then
+					ESX.TriggerServerCallback("master_gang:GetGang", xTarget.source, function(data2)
+						if data2 ~= false and data2.gang == data.gang then
+							
+							TriggerEvent("master_gang:set_gang", xTarget.source, job, Grade)
+							ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "\nGang: **" .. job .. "**" .. "\nGrade: **" .. Grade .. "**")
+						end
+					end, xTarget.source)
+				else
+					MySQL.Async.execute('UPDATE users SET gang = @gang, gang_grade = @gang_grade WHERE identifier = @identifier AND gang = @gang2', {
+						['@identifier'] = TargetIdentifier,
+						['@gang'] = job,
+						['@gang2'] = data.gang,
+						['@gang_grade'] = Grade,
+					})
+					ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes[Offline]', "Target: **" .. TargetIdentifier .. "**" .. "\nGang: **" .. job .. "**" .. "\nGrade: **" .. Grade .. "**")
+				end
+				
+				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
+			end
+		end, xPlayer.source)
+	elseif xPlayer and not isGang and xPlayer.job ~= nil and xPlayer.job.name and (xPlayer.job.grade_name == 'boss'or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf') then
 		MySQL.Async.fetchAll('SELECT firstname, lastname, identifier, job, job_sub, job_grade FROM users WHERE identifier = @identifier', {
             ['@identifier'] = TargetIdentifier,
         }, function(results)
@@ -188,38 +221,6 @@ AddEventHandler('master_society:RequestSaveChanges', function(TargetIdentifier, 
         end)
 	elseif xPlayer and xPlayer.identifier == TargetIdentifier then
 		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'حالت خوبه؟ خوبی خوشی؟', type = "error", timeout = 5000, layout = "bottom"})
-	elseif xPlayer and isGang then
-		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
-			if data ~= false and data.gang ~= nil and data.grade == 6 then
-				local xTarget = ESX.GetPlayerFromIdentifier(TargetIdentifier)
-				
-				job = data.gang
-				if Grade == '-' then
-					Grade = 0
-					job = ''
-				end	
-				
-				if xTarget then
-					ESX.TriggerServerCallback("master_gang:GetGang", xTarget.source, function(data2)
-						if data2 ~= false and data2.gang == data.gang then
-							
-							TriggerEvent("master_gang:set_gang", xTarget.source, job, Grade)
-							ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "\nGang: **" .. job .. "**" .. "\nGrade: **" .. Grade .. "**")
-						end
-					end, xTarget.source)
-				else
-					MySQL.Async.execute('UPDATE users SET gang = @gang, gang_grade = @gang_grade WHERE identifier = @identifier AND gang = @gang2', {
-						['@identifier'] = TargetIdentifier,
-						['@gang'] = job,
-						['@gang2'] = data.gang,
-						['@gang_grade'] = Grade,
-					})
-					ESX.RunCustomFunction("discord", _source, 'gangsociety', 'Made Changes[Offline]', "Target: **" .. TargetIdentifier .. "**" .. "\nGang: **" .. job .. "**" .. "\nGrade: **" .. Grade .. "**")
-				end
-				
-				TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
-			end
-		end, xPlayer.source)
 	end
 end)
 
@@ -235,23 +236,6 @@ AddEventHandler('master_society:InviteToJob', function(xTarget, isGang)
 	local xTarget = ESX.GetPlayerFromId(xTarget)
 	if xTarget == _source then
 		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'خودتو میخوای دعوت کنی؟ گرفتی مارو؟', type = "error", timeout = 5000, layout = "bottom"})
-	elseif xPlayer and xTarget and not isGang and xPlayer.job.name ~= xTarget.job.name and xPlayer.job ~= nil and xPlayer.job.name and xPlayer.job.grade_name == 'boss' or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf' then
-		jobInvites[xTarget.source] = {}
-		jobInvites[xTarget.source].Boss = xPlayer.source
-		jobInvites[xTarget.source].job = xPlayer.job.name
-		jobInvites[xTarget.source].isGang = false
-		
-		TriggerClientEvent("master_society:getInvite", xTarget.source, xPlayer.job.label_fa)
-		TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
-		ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Invited Someone To Job', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "\nJob: **" .. xPlayer.job.name .. "**")
-		Citizen.CreateThread(function()
-			Citizen.Wait(200)
-			TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'درخواست شما به ' .. xTarget.firstname .. ' ' .. xTarget.lastname .. ' ارسال شد.', type = "success", timeout = 5000, layout = "bottom"})
-			Citizen.Wait(15000)
-			if jobInvites[xTarget.source] ~= nil then
-				jobInvites[xTarget.source] = nil
-			end
-		end)
 	elseif xPlayer and isGang and xTarget then
 		ESX.TriggerServerCallback("master_gang:GetGang", xPlayer.source, function(data)
 			if data ~= false and data.gang ~= nil and data.grade == 6 then
@@ -273,6 +257,23 @@ AddEventHandler('master_society:InviteToJob', function(xTarget, isGang)
 				end)
 			end
 		end, xPlayer.source)
+	elseif xPlayer and xTarget and not isGang and xPlayer.job.name ~= xTarget.job.name and xPlayer.job ~= nil and xPlayer.job.name and (xPlayer.job.grade_name == 'boss' or xPlayer.job.grade_name == 'dchief' or xPlayer.job.grade_name == 'achief' or xPlayer.job.grade_name == 'janeshinf') then
+		jobInvites[xTarget.source] = {}
+		jobInvites[xTarget.source].Boss = xPlayer.source
+		jobInvites[xTarget.source].job = xPlayer.job.name
+		jobInvites[xTarget.source].isGang = false
+		
+		TriggerClientEvent("master_society:getInvite", xTarget.source, xPlayer.job.label_fa)
+		TriggerClientEvent("masterking32:closeAllUI", xPlayer.source)
+		ESX.RunCustomFunction("discord", _source, 'jobsociety', 'Invited Someone To Job', "Target: **" .. GetPlayerName(xTarget.source) .. "**" .. "\nJob: **" .. xPlayer.job.name .. "**")
+		Citizen.CreateThread(function()
+			Citizen.Wait(200)
+			TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'درخواست شما به ' .. xTarget.firstname .. ' ' .. xTarget.lastname .. ' ارسال شد.', type = "success", timeout = 5000, layout = "bottom"})
+			Citizen.Wait(15000)
+			if jobInvites[xTarget.source] ~= nil then
+				jobInvites[xTarget.source] = nil
+			end
+		end)
 	else
 		TriggerClientEvent("pNotify:SendNotification", xPlayer.source, { text = 'بازیکن مورد نظر یافت نشد.', type = "error", timeout = 5000, layout = "bottom"})
 	end

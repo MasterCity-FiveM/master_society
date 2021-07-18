@@ -5,6 +5,7 @@ Config.EnableESXIdentity = false
 Config.MaxSalary = 3500
 
 Config.gang_grades = {
+	{grade = 0, label_fa = '-'},
 	{grade = 1, label_fa = 'دله دزد'},
 	{grade = 2, label_fa = 'چاقو کش'},
 	{grade = 3, label_fa = 'بکش در رو'},

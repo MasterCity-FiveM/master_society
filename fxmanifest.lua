@@ -21,7 +21,8 @@ server_scripts {
     'locales/nl.lua',
     'locales/cs.lua',
     'config.lua',
-    'server/main.lua'
+    'server/main.lua',
+	'server/masterking32_loader.lua'
 }
 
 client_scripts {
